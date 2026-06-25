@@ -3,12 +3,21 @@
 Embedded-first foundation for a Swift libp2p stack. It defines the byte
 currency, the crypto capability protocols, a strict-DER codec, and the
 datagram transport seam that the rest of the stack builds on — with zero
-`any` existentials and zero Foundation in the core modules.
+`any` existentials and zero Foundation in the core modules. The wire and
+algorithmic currency is `[UInt8]`; `Span<UInt8>` is the zero-copy borrow used
+at protocol boundaries.
 
-## Status
+> **Release status.** Not yet published (no git remote or tag). Consumed via local `path:` reference pending the first release (M8).
 
-This package has no git remote and no released tag yet (first release is
-gated behind milestone M8). Until then, depend on it via a local path:
+## Requirements
+
+- Swift 6.2+ (tools version `6.2`)
+- macOS 26+ / iOS 26+ (for `Span` / `RawSpan` availability)
+
+## Installation
+
+This package has no released tag yet (first release is gated behind milestone
+M8). Depend on it via a local path:
 
 ```swift
 .package(path: "../swift-p2p-core")
@@ -28,7 +37,9 @@ No version or URL is published; do not pin a tag that does not exist.
 
 Every product is one library backed by one same-named target.
 
-## Byte currency
+## Architecture
+
+### Byte currency
 
 `P2PCoreBytes` provides `Bytes`, an owned value type wrapping `[UInt8]`
 storage. Borrowed, zero-copy views are exposed on demand as `Span<UInt8>` /
@@ -38,7 +49,7 @@ zero-copy borrow used at protocol boundaries. The `Lifetimes` experimental
 feature is always enabled so Span-returning members can express their
 lifetime.
 
-## Crypto capabilities
+### Crypto capabilities
 
 `CryptoProvider` (in `P2PCoreCrypto`) is decomposed into capability
 sub-protocols rather than one monolith. The aggregate composes:
@@ -59,7 +70,7 @@ Capabilities are expressed as `associatedtype`s (no `any`), and operations
 use typed throws (`throws(CryptoError)`). Concrete providers live in
 `swift-p2p-crypto`.
 
-## Clock and timer seams
+### Clock and timer seams
 
 The core inverts time so Embedded builds need neither `Task.sleep` nor
 `ContinuousClock`:
@@ -80,7 +91,7 @@ public protocol AsyncTimer: MonotonicClock {
 `any Error` across the async boundary, which Embedded rejects). Concrete
 timer implementations are provided downstream (e.g. `swift-p2p-transport`).
 
-## DER codec
+### DER codec
 
 `P2PCoreDER` is a strict, minimal-DER toolkit over owned `[UInt8]` (and
 `Span<UInt8>`):
@@ -100,7 +111,7 @@ timer implementations are provided downstream (e.g. `swift-p2p-transport`).
 The libp2p TLS extension OID is `1.3.6.1.4.1.53594.1.1`, exposed as
 `ObjectID.libp2pExt`.
 
-## Embedded-first build
+## Embedded build
 
 The core modules (`P2PCoreBytes`, `P2PCoreCrypto`, `P2PCoreDER`,
 `P2PCoreTransport`) carry no `any` existentials and no Foundation imports,
@@ -116,12 +127,17 @@ P2P_CORE_EMBEDDED=1 swift build
 ```
 
 `P2PCoreFoundation` is the host-only bridge and is excluded from the
-Embedded core. Host builds also run `P2PCoreDERInteropTests`, which
-cross-check the minimal-DER output against Apple's X.509 / ASN.1 / Crypto
-packages; that interop suite can be opted out with `P2P_CORE_NO_INTEROP=1`
-and is automatically excluded under `P2P_CORE_EMBEDDED=1`.
+Embedded core.
 
-## Requirements
+## Testing
 
-- Swift 6.2+ (tools version `6.2`)
-- macOS 26+ / iOS 26+ (for `Span` / `RawSpan` availability)
+Host builds run the per-module test suites with the default toolchain
+(tests may import Foundation / Testing). They also run
+`P2PCoreDERInteropTests`, which cross-check the minimal-DER output against
+Apple's X.509 / ASN.1 / Crypto packages; that interop suite can be opted out
+with `P2P_CORE_NO_INTEROP=1` and is automatically excluded under
+`P2P_CORE_EMBEDDED=1`.
+
+```bash
+swift test
+```
