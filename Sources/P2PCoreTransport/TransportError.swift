@@ -19,6 +19,12 @@ public enum TransportError: Error, Equatable, Sendable {
     /// The destination endpoint is malformed or unreachable.
     case invalidEndpoint
 
+    /// The requested transport capability is not available on this platform.
+    ///
+    /// This is distinct from ``ioFailure``: callers can treat it as a static
+    /// capability mismatch rather than a transient send/receive failure.
+    case unsupportedPlatform(String)
+
     /// A send or receive failed at the backend/syscall level.
     case ioFailure
 }

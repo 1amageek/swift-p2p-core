@@ -140,6 +140,10 @@ struct DatagramTransportStubTests {
         }
     }
 
+    @Test func unsupportedPlatform_isDistinctFromIOFailure() {
+        #expect(TransportError.unsupportedPlatform("WASI") != TransportError.ioFailure)
+    }
+
     @Test func send_withinLimit_succeeds() async throws {
         let transport = StubTransport(inbound: [])
         let payload: [UInt8] = [9, 9, 9]

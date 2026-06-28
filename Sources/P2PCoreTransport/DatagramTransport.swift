@@ -30,6 +30,8 @@ public protocol DatagramTransport: Sendable {
     ///   - ``TransportError/closed`` if the transport is closed.
     ///   - ``TransportError/messageTooLarge(size:maximum:)`` if `payload` exceeds
     ///     ``maximumDatagramSize``.
+    ///   - ``TransportError/unsupportedPlatform(_:)`` if the requested backend is
+    ///     not available on this platform.
     ///   - ``TransportError/ioFailure`` on a backend error.
     func send(_ payload: Span<UInt8>, to endpoint: SocketEndpoint) async throws(TransportError)
 
