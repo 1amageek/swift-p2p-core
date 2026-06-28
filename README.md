@@ -7,7 +7,7 @@ datagram transport seam that the rest of the stack builds on — with zero
 algorithmic currency is `[UInt8]`; `Span<UInt8>` is the zero-copy borrow used
 at protocol boundaries.
 
-> **Release status.** Not yet published (no git remote or tag). Consumed via local `path:` reference pending the first release (M8).
+> **Release status.** Current release: `0.2.1`.
 
 ## Requirements
 
@@ -16,14 +16,11 @@ at protocol boundaries.
 
 ## Installation
 
-This package has no released tag yet (first release is gated behind milestone
-M8). Depend on it via a local path:
+Add swift-p2p-core to your `Package.swift`:
 
 ```swift
-.package(path: "../swift-p2p-core")
+.package(url: "https://github.com/1amageek/swift-p2p-core.git", from: "0.2.1")
 ```
-
-No version or URL is published; do not pin a tag that does not exist.
 
 ## Products
 
