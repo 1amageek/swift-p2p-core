@@ -19,6 +19,14 @@ public enum CryptoError: Error, Equatable, Sendable {
     /// Diffie-Hellman produced no shared secret.
     case keyAgreementFailure
 
+    /// A key had the expected byte length but was not valid for its algorithm.
+    ///
+    /// Examples include a zero/out-of-range NIST-curve scalar and a malformed,
+    /// off-curve, infinite, or non-canonical public point. This is distinct from
+    /// ``keyAgreementFailure``, which describes a failure while deriving a
+    /// shared secret from already-imported keys.
+    case invalidKeyMaterial
+
     /// Reserved; verify uses `Bool`, sign may throw this.
     case invalidSignature
 

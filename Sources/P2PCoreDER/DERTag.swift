@@ -1,14 +1,15 @@
 // DERTag.swift
 // The closed set of ASN.1 identifier octets the libp2p TLS/QUIC/DTLS cert path
 // touches. Short-form tag numbers only; no long-form, no SET, no NULL, no
-// string types, no other context tags. Embedded-clean: no Foundation, no `any`.
+// string types. Embedded-clean: no Foundation, no `any`.
 
 /// The identifier octets used on the libp2p certificate path.
 ///
 /// Each case is the full DER identifier octet (class + constructed bit + tag
 /// number), not just the tag number. The universe is deliberately small: the
 /// libp2p self-signed cert + SignedKey extension + SubjectPublicKeyInfo only
-/// ever use these tags. `NULL` is intentionally absent (the ecPublicKey
+/// use these tags, including the optional X.509 unique identifiers. `NULL` is
+/// intentionally absent (the ecPublicKey
 /// AlgorithmIdentifier carries the curve OID as `parameters`, never NULL;
 /// Ed25519 omits parameters entirely).
 public enum DERTag: UInt8, Sendable {
@@ -38,6 +39,12 @@ public enum DERTag: UInt8, Sendable {
 
     /// `[0]` EXPLICIT constructed — TBS version.
     case context0 = 0xA0
+
+    /// `[1]` IMPLICIT primitive — issuerUniqueID.
+    case context1Primitive = 0x81
+
+    /// `[2]` IMPLICIT primitive — subjectUniqueID.
+    case context2Primitive = 0x82
 
     /// `[3]` EXPLICIT constructed — TBS extensions.
     case context3 = 0xA3

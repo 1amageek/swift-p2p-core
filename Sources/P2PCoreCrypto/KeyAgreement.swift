@@ -33,7 +33,10 @@ public protocol KeyAgreement: Sendable {
 
     /// Computes the raw shared secret between `privateKey` and `peerPublicKey`.
     ///
-    /// - Throws: ``CryptoError/keyAgreementFailure`` on invalid peer keys.
+    /// Key import rejects structurally or mathematically invalid bytes with
+    /// ``CryptoError/invalidKeyMaterial``. This operation throws
+    /// ``CryptoError/keyAgreementFailure`` only when agreement fails after both
+    /// keys have already crossed their import boundaries.
     static func sharedSecret(
         privateKey: PrivateKey,
         peerPublicKey: PublicKey

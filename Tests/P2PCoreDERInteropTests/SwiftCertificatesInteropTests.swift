@@ -87,6 +87,21 @@ struct SwiftCertificatesInteropTests {
         #expect(parsedSPKI.keyBytes == Array(tlsKey.publicKey.x963Representation))
     }
 
+    @Test func x509Extractor_matchesSwiftCertificatesSubjectPublicKeyInfo() throws {
+        let tlsKey = P256.Signing.PrivateKey()
+        let signedKey = Self.makeSignedKey()
+        let (certificateDER, referenceSPKI) = try Self.makeReferenceCert(
+            tlsKey: tlsKey,
+            signedKeyExtension: signedKey.ext
+        )
+
+        let parsed = try X509CertificateDER.subjectPublicKeyInfo(in: certificateDER)
+
+        #expect(parsed.curve == .p256)
+        #expect(parsed.spkiDER == referenceSPKI)
+        #expect(parsed.keyBytes == Array(tlsKey.publicKey.x963Representation))
+    }
+
     @Test func signedKeyExtension_roundTripsViaReferencePath() throws {
         let tlsKey = P256.Signing.PrivateKey()
         let sk = Self.makeSignedKey()

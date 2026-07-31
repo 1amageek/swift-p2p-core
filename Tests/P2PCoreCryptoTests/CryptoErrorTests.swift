@@ -7,6 +7,34 @@ import Testing
 
 @Suite("Crypto errors")
 struct CryptoErrorTests {
+    @Test func aesCounterMode_wrongKeyLength_throwsTypedFailure() {
+        let key = [UInt8](repeating: 0, count: 15)
+        #expect(throws: AESCounterModeError.invalidKeyLength(expected: 16, actual: 15)) {
+            _ = try StubAES128CounterMode(key: key.span)
+        }
+    }
+
+    @Test func aesCounterMode_wrongCounterLength_throwsTypedFailure() throws {
+        let key = [UInt8](repeating: 0, count: 16)
+        let counter = [UInt8](repeating: 0, count: 15)
+        var bytes = [UInt8](repeating: 0, count: 4)
+        let range = bytes.indices
+        let cipher = try StubAES128CounterMode(key: key.span)
+        #expect(throws: AESCounterModeError.invalidCounterLength(expected: 16, actual: 15)) {
+            try cipher.applyKeystream(to: &bytes, range: range, initialCounter: counter.span)
+        }
+    }
+
+    @Test func aesCounterMode_outOfBoundsRange_throwsTypedFailure() throws {
+        let key = [UInt8](repeating: 0, count: 16)
+        let counter = [UInt8](repeating: 0, count: 16)
+        var bytes = [UInt8](repeating: 0, count: 4)
+        let cipher = try StubAES128CounterMode(key: key.span)
+        #expect(throws: AESCounterModeError.invalidRange(lowerBound: 1, upperBound: 5, bufferCount: 4)) {
+            try cipher.applyKeystream(to: &bytes, range: 1..<5, initialCounter: counter.span)
+        }
+    }
+
     @Test func aead_open_shortInput_throwsInvalidLength() {
         let aead = StubAEAD(key: [UInt8](repeating: 0, count: 16))
         let nonce = [UInt8](repeating: 0, count: StubAEAD.nonceLength)

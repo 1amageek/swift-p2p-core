@@ -17,6 +17,42 @@ func toArray(_ span: Span<UInt8>) -> [UInt8] {
     return out
 }
 
+// MARK: - AES counter-mode stub
+
+/// Deterministic XOR stub for exercising the in-place AES-CTR contract.
+struct StubAES128CounterMode: AESCounterModeCipher {
+    private let key: [UInt8]
+
+    init(key: Span<UInt8>) throws(AESCounterModeError) {
+        guard key.count == 16 else {
+            throw .invalidKeyLength(expected: 16, actual: key.count)
+        }
+        self.key = toArray(key)
+    }
+
+    func applyKeystream(
+        to bytes: inout [UInt8],
+        range: Range<Int>,
+        initialCounter: Span<UInt8>
+    ) throws(AESCounterModeError) {
+        guard initialCounter.count == 16 else {
+            throw .invalidCounterLength(expected: 16, actual: initialCounter.count)
+        }
+        guard range.lowerBound >= 0, range.upperBound <= bytes.count else {
+            throw .invalidRange(
+                lowerBound: range.lowerBound,
+                upperBound: range.upperBound,
+                bufferCount: bytes.count
+            )
+        }
+
+        for index in range {
+            let offset = index - range.lowerBound
+            bytes[index] ^= key[offset % key.count] ^ initialCounter[offset % initialCounter.count]
+        }
+    }
+}
+
 // MARK: - AEAD stubs
 
 /// Generic AEAD stub: a keystream XOR cipher with a deterministic 16-byte tag.
@@ -374,4 +410,8 @@ struct StubProvider: CryptoProvider {
 
     static var random: StubRandom { StubRandom() }
     static var clock: StubClock { StubClock() }
+}
+
+extension StubProvider: AESCounterModeProvider {
+    typealias AES128CounterMode = StubAES128CounterMode
 }

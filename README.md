@@ -7,11 +7,11 @@ datagram transport seam that the rest of the stack builds on — with zero
 algorithmic currency is `[UInt8]`; `Span<UInt8>` is the zero-copy borrow used
 at protocol boundaries.
 
-> **Release status.** Current release: `0.2.1`.
+> **Release status.** Current release: `0.3.0`.
 
 ## Requirements
 
-- Swift 6.2+ (tools version `6.2`)
+- Swift 6.4 development snapshot `2026-07-23` (tools version `6.2`)
 - macOS 26+ / iOS 26+ (for `Span` / `RawSpan` availability)
 
 ## Installation
@@ -19,7 +19,7 @@ at protocol boundaries.
 Add swift-p2p-core to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/1amageek/swift-p2p-core.git", from: "0.2.1")
+.package(url: "https://github.com/1amageek/swift-p2p-core.git", from: "0.3.0")
 ```
 
 ## Products
@@ -54,6 +54,7 @@ sub-protocols rather than one monolith. The aggregate composes:
 | Sub-protocol | Capability |
 |---|---|
 | `AEADProvider` | AES-GCM-128/256, ChaCha20-Poly1305 |
+| `AESCounterModeProvider` | Reusable, in-place AES-128-CTR for SRTP-like protocols |
 | `KDFProvider` (refines `HashProvider`) | HKDF-SHA256 / HKDF-SHA384 |
 | `MACProvider` | HMAC-SHA1 / SHA256 / SHA384 |
 | `KeyAgreementProvider` | X25519, P-256, P-384 ECDH |
@@ -63,9 +64,14 @@ sub-protocols rather than one monolith. The aggregate composes:
 | `HeaderProtectionProviding` | QUIC header protection (RFC 9001 §5.4) |
 
 `HashProvider` is the hashing primitive that `KDFProvider` refines.
+`AESCounterModeProvider` is deliberately not part of the `CryptoProvider`
+aggregate: a consumer combines it with only the other narrow capabilities it
+needs. Its cipher mutates a caller-owned `[UInt8]` range in place and reports
+failures through `AESCounterModeError`.
 Capabilities are expressed as `associatedtype`s (no `any`), and operations
-use typed throws (`throws(CryptoError)`). Concrete providers live in
-`swift-p2p-crypto`.
+use typed throws. The aggregate capabilities throw `CryptoError`; the
+independent AES-CTR capability throws `AESCounterModeError`. Concrete providers
+live in `swift-p2p-crypto`.
 
 ### Clock and timer seams
 
@@ -128,7 +134,7 @@ Embedded core.
 
 ## Testing
 
-Host builds run the per-module test suites with the default toolchain
+Host builds run the per-module test suites with the pinned Swift 6.4 toolchain
 (tests may import Foundation / Testing). They also run
 `P2PCoreDERInteropTests`, which cross-check the minimal-DER output against
 Apple's X.509 / ASN.1 / Crypto packages; that interop suite can be opted out
@@ -136,5 +142,9 @@ with `P2P_CORE_NO_INTEROP=1` and is automatically excluded under
 `P2P_CORE_EMBEDDED=1`.
 
 ```bash
-swift test
+TOOLCHAINS=org.swift.64202607231a \
+  xcodebuild test \
+  -scheme swift-p2p-core-Package \
+  -destination 'platform=macOS' \
+  -maximum-test-execution-time-allowance 60
 ```

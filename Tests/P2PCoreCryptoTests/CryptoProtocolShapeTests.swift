@@ -7,6 +7,21 @@ import Testing
 
 @Suite("Crypto protocol shape")
 struct CryptoProtocolShapeTests {
+    @Test func stub_conformsToAESCounterModeCipher_inPlaceRange() throws {
+        let key = [UInt8](repeating: 0xAA, count: 16)
+        let counter = [UInt8](repeating: 0x55, count: 16)
+        var bytes: [UInt8] = [0x10, 0x20, 0x30, 0x40]
+        let cipher = try StubProvider.makeAES128CounterMode(key: key.span)
+
+        try cipher.applyKeystream(
+            to: &bytes,
+            range: 1..<3,
+            initialCounter: counter.span
+        )
+
+        #expect(bytes == [0x10, 0xDF, 0xCF, 0x40])
+    }
+
     @Test func stub_conformsToAEAD() throws {
         let aead = StubAEAD(key: [UInt8](repeating: 0x10, count: 16))
         let pt: [UInt8] = [1, 2, 3, 4]

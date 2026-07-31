@@ -45,4 +45,8 @@ public enum DERError: Error, Equatable, Sendable {
     /// A recognized structure carried an OID the codec does not accept
     /// (e.g. an unsupported curve / algorithm in SubjectPublicKeyInfo).
     case unsupportedOID
+
+    /// An X.509 certificate did not contain the required fields in RFC 5280
+    /// order, or carried an unrecognized field in its certificate envelope.
+    case invalidCertificateStructure
 }
