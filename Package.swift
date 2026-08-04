@@ -24,14 +24,12 @@ let interopEnabled = !portableEnabled && Context.environment["P2P_CORE_NO_INTERO
 
 let packageDependencies: [Package.Dependency] = [
     // The canonical Pure Swift mechanism and primitive implementation.
-    // This local reference is for the workspace migration; release manifests
-    // must use the tagged repository URL before publishing.
-    .package(name: "swift-ssl", path: "../../swift-ssl"),
+    .package(name: "swift-ssl", url: "https://github.com/1amageek/swift-ssl.git", branch: "main"),
 ] + (interopEnabled ? [
     // Interop tests remain host-only and are not part of the production graph.
-    .package(name: "swift-crypto", path: "../../swift-crypto"),
-    .package(name: "swift-certificates", path: "../../swift-certificates"),
-    .package(name: "swift-asn1", path: "../../swift-asn1"),
+    .package(name: "swift-crypto", url: "https://github.com/1amageek/swift-crypto.git", branch: "main"),
+    .package(name: "swift-certificates", url: "https://github.com/1amageek/swift-certificates.git", branch: "main"),
+    .package(name: "swift-asn1", url: "https://github.com/1amageek/swift-asn1.git", branch: "main"),
 ] : [])
 
 let package = Package(
