@@ -36,6 +36,20 @@ public enum DERError: Error, Equatable, Sendable {
     /// An INTEGER had zero content octets.
     case integerEmpty
 
+    /// An INTEGER used a negative two's-complement representation where a
+    /// non-negative value was required.
+    case negativeInteger
+
+    /// An INTEGER used a redundant leading sign octet.
+    case nonMinimalInteger
+
+    /// An INTEGER cannot fit the fixed-width unsigned value expected by the
+    /// caller.
+    case integerOutOfRange(maximumByteCount: Int, actualByteCount: Int)
+
+    /// A fixed-width ECDSA signature did not contain exactly two scalars.
+    case invalidECDSASignatureLength(expected: Int, actual: Int)
+
     /// A declared length is implausible for the target buffer.
     case valueTooLarge
 

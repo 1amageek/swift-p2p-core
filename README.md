@@ -11,7 +11,7 @@ at protocol boundaries.
 
 ## Requirements
 
-- Swift 6.4 development snapshot `2026-07-23` (tools version `6.2`)
+- Swift 6.4 development snapshot `2026-07-23` (tools version `6.4`)
 - macOS 26+ / iOS 26+ (for `Span` / `RawSpan` availability)
 
 ## Installation
@@ -31,6 +31,7 @@ Add swift-p2p-core to your `Package.swift`:
 | `P2PCoreDER` | `P2PCoreBytes` | Strict minimal-DER reader/writer + SPKI / SignedKey / certificate codecs |
 | `P2PCoreTransport` | `P2PCoreBytes` | `DatagramTransport` seam, endpoints, IP address types |
 | `P2PCoreFoundation` | `P2PCoreBytes` | Host bridge: `Bytes` ↔ `Data` (Foundation, host-only) |
+| `P2PCrypto` | `P2PCoreCrypto`, `swift-ssl` (`SSLCore`, `SSLCrypto`) | Default Native/WASM/Embedded crypto adapter |
 
 Every product is one library backed by one same-named target.
 
@@ -70,8 +71,11 @@ needs. Its cipher mutates a caller-owned `[UInt8]` range in place and reports
 failures through `AESCounterModeError`.
 Capabilities are expressed as `associatedtype`s (no `any`), and operations
 use typed throws. The aggregate capabilities throw `CryptoError`; the
-independent AES-CTR capability throws `AESCounterModeError`. Concrete providers
-live in `swift-p2p-crypto`.
+independent AES-CTR capability throws `AESCounterModeError`. The concrete
+`DefaultCryptoProvider` lives in this package's `P2PCrypto` product and delegates
+cryptographic primitives to the Pure Swift `swift-ssl` engine. Host-only
+interop packages remain optional test fixtures and are not part of the
+`P2PCrypto` production target.
 
 ### Clock and timer seams
 
@@ -117,16 +121,31 @@ The libp2p TLS extension OID is `1.3.6.1.4.1.53594.1.1`, exposed as
 ## Embedded build
 
 The core modules (`P2PCoreBytes`, `P2PCoreCrypto`, `P2PCoreDER`,
-`P2PCoreTransport`) carry no `any` existentials and no Foundation imports,
-so they compile under Embedded Swift. The build is dual-mode, gated on the
-`P2P_CORE_EMBEDDED` environment variable:
+`P2PCoreTransport`) and the `P2PCrypto` adapter carry no Foundation dependency
+in their portable execution paths, so they compile for WASM and Embedded
+Swift. The adapter uses the same `DefaultCryptoProvider` contract on every
+target; the implementation is `swift-ssl` on Native, WASM, and Embedded. The
+shared storage and capability contracts do not change by target.
 
 ```bash
-# Host build (default): Lifetimes only
-swift build
+# Host build
+TOOLCHAINS=org.swift.64202607231a swift build --target P2PCrypto
 
-# Embedded build: adds Embedded feature + whole-module optimization
-P2P_CORE_EMBEDDED=1 swift build
+# WASM build
+TOOLCHAINS=org.swift.64202607231a \
+  P2P_CORE_WASM=1 \
+  swift build \
+  --swift-sdk swift-6.4.x-DEVELOPMENT-SNAPSHOT-2026-07-23-a_wasm \
+  --target P2PCrypto \
+  -c release
+
+# Embedded WASM build
+TOOLCHAINS=org.swift.64202607231a \
+  P2P_CORE_EMBEDDED=1 \
+  swift build \
+  --swift-sdk swift-6.4.x-DEVELOPMENT-SNAPSHOT-2026-07-23-a_wasm-embedded \
+  --target P2PCrypto \
+  -c release
 ```
 
 `P2PCoreFoundation` is the host-only bridge and is excluded from the
@@ -139,7 +158,7 @@ Host builds run the per-module test suites with the pinned Swift 6.4 toolchain
 `P2PCoreDERInteropTests`, which cross-check the minimal-DER output against
 Apple's X.509 / ASN.1 / Crypto packages; that interop suite can be opted out
 with `P2P_CORE_NO_INTEROP=1` and is automatically excluded under
-`P2P_CORE_EMBEDDED=1`.
+`P2P_CORE_WASM=1` and `P2P_CORE_EMBEDDED=1`.
 
 ```bash
 TOOLCHAINS=org.swift.64202607231a \

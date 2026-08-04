@@ -203,6 +203,25 @@ public struct DERReader: ~Copyable {
         return content
     }
 
+    /// Reads a canonical, non-negative DER INTEGER and preserves its optional
+    /// leading sign-protection octet.
+    ///
+    /// DER requires the shortest two's-complement representation. A leading
+    /// `0x00` is accepted only when the next octet has its high bit set; negative
+    /// values and redundant sign octets are rejected.
+    public mutating func readCanonicalNonNegativeIntegerBytes() throws(DERError) -> [UInt8] {
+        let content = try readIntegerBytes()
+        guard content[0] & 0x80 == 0 else {
+            throw DERError.negativeInteger
+        }
+        if content.count > 1,
+           content[0] == 0x00,
+           content[1] & 0x80 == 0 {
+            throw DERError.nonMinimalInteger
+        }
+        return content
+    }
+
     /// Reads a BOOLEAN (tag `0x01`); DER true == 0xFF (any non-zero accepted as
     /// true here is rejected — strict DER requires exactly 0x00 or 0xFF).
     public mutating func readBoolean() throws(DERError) -> Bool {

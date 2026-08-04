@@ -4,7 +4,7 @@
 // (N2), and that send enforces its size/closed contract.
 
 import Testing
-import Foundation  // NSLock only; the transport API itself stays Foundation-free.
+import Synchronization
 @testable import P2PCoreTransport
 
 // MARK: - A conforming stub with a finite custom AsyncSequence
@@ -36,50 +36,41 @@ final class StubTransport: DatagramTransport {
 
     let maximumDatagramSize = 1200
     private let inbound: [Datagram]
-    private let state = StubState()
+    private let state = Mutex(StubState())
 
     init(inbound: [Datagram]) {
         self.inbound = inbound
     }
 
-    var sentCount: Int { state.sentCount }
-    func lastSent() -> (payload: [UInt8], to: SocketEndpoint)? { state.last() }
+    var sentCount: Int { state.withLock { $0.sent.count } }
+    func lastSent() -> (payload: [UInt8], to: SocketEndpoint)? {
+        state.withLock { $0.sent.last }
+    }
 
     func send(_ payload: Span<UInt8>, to endpoint: SocketEndpoint) async throws(TransportError) {
-        guard !state.isClosed else { throw TransportError.closed }
+        guard !state.withLock({ $0.closed }) else { throw TransportError.closed }
         guard payload.count <= maximumDatagramSize else {
             throw TransportError.messageTooLarge(size: payload.count, maximum: maximumDatagramSize)
         }
         var copy = [UInt8]()
         copy.reserveCapacity(payload.count)
         for i in 0..<payload.count { copy.append(payload[i]) }
-        state.record(payload: copy, to: endpoint)
+        state.withLock { $0.sent.append((copy, endpoint)) }
     }
 
     var incoming: StubIncoming {
-        StubIncoming(datagrams: state.isClosed ? [] : inbound)
+        StubIncoming(datagrams: state.withLock { $0.closed } ? [] : inbound)
     }
 
     func close() async {
-        state.close()
+        state.withLock { $0.closed = true }
     }
 }
 
-/// Thread-safe state for the stub transport.
-final class StubState: @unchecked Sendable {
-    private let lock = NSLock()
-    private var sent: [(payload: [UInt8], to: SocketEndpoint)] = []
-    private var closed = false
-
-    var sentCount: Int { lock.withLock { sent.count } }
-    var isClosed: Bool { lock.withLock { closed } }
-    func record(payload: [UInt8], to endpoint: SocketEndpoint) {
-        lock.withLock { sent.append((payload, endpoint)) }
-    }
-    func last() -> (payload: [UInt8], to: SocketEndpoint)? {
-        lock.withLock { sent.last }
-    }
-    func close() { lock.withLock { closed = true } }
+/// State isolated by the stub transport's `Mutex`.
+struct StubState: Sendable {
+    var sent: [(payload: [UInt8], to: SocketEndpoint)] = []
+    var closed = false
 }
 
 // MARK: - Generic consumer (lives in *Core engines in production; here for the test)

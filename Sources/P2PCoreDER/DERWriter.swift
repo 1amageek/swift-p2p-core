@@ -80,8 +80,14 @@ public struct DERWriter: Sendable {
         if let first = value.first, first & 0x80 != 0 {
             value.insert(0x00, at: 0)
         }
-        while value.count > 1 && value[0] == 0x00 && (value[1] & 0x80) == 0 {
-            value.removeFirst()
+        var firstSignificantIndex = 0
+        while firstSignificantIndex + 1 < value.count,
+              value[firstSignificantIndex] == 0x00,
+              value[firstSignificantIndex + 1] & 0x80 == 0 {
+            firstSignificantIndex += 1
+        }
+        if firstSignificantIndex > 0 {
+            value = Array(value[firstSignificantIndex...])
         }
         appendTLV(.integer, content: value)
     }
