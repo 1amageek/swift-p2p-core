@@ -4,8 +4,8 @@ import SSLCrypto
 /// Compatibility names for the canonical `swift-ssl` backend.
 ///
 /// The provider surface remains owned by `P2PCoreCrypto`; all primitive
-/// implementations below are sourced from `SSLCrypto` and contain no
-/// `swift-crypto` or BoringSSL dependency.
+/// implementations below are sourced from `SSLCrypto` and contain no external
+/// crypto backend dependency.
 public typealias DefaultSHA256 = SSLBackendSHA256
 public typealias DefaultSHA384 = SSLBackendSHA384
 public typealias DefaultHMACSHA1 = SSLBackendHMACSHA1
@@ -15,11 +15,11 @@ public typealias DefaultHKDFSHA256 = SSLBackendHKDFSHA256
 public typealias DefaultHKDFSHA384 = SSLBackendHKDFSHA384
 public typealias DefaultX25519 = SSLBackendX25519
 public typealias DefaultP256Agreement = SSLBackendP256Agreement
-    public typealias DefaultP384Agreement = SSLBackendP384Agreement
+public typealias DefaultP384Agreement = SSLBackendP384Agreement
 public typealias DefaultEd25519 = SSLBackendEd25519
 public typealias DefaultP256Signature = SSLBackendP256Signature
 public typealias DefaultRawP256Signature = SSLBackendRawP256Signature
-    public typealias DefaultP384Signature = SSLBackendP384Signature
+public typealias DefaultP384Signature = SSLBackendP384Signature
 public typealias DefaultRandom = SSLBackendRandom
 public typealias DefaultMonotonicClock = SSLBackendClock
 public typealias DefaultHeaderProtection = SSLBackendHeaderProtection
