@@ -20,6 +20,15 @@
       }
     },
     {
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/1amageek/swift-crypto.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "469aab1498f38897e9f63ecda5ef80199226ea4a"
+      }
+    },
+    {
       "identity" : "swift-ssl",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/1amageek/swift-ssl.git",
