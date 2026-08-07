@@ -1,13 +1,13 @@
 {
-  "originHash" : "f86616d130586b39e09d88acc155b6b5d2b2d0ab668a2b93e7be7d1dd00fd675",
+  "originHash" : "60679a4eea2a509ce02fe4915a8cb469e4a0ee79c1cde374eaa53a39e63ce531",
   "pins" : [
     {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/1amageek/swift-asn1.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "3442f34691a42f9838c863af7f7950ed51dd2153"
+        "revision" : "4e0ccf0ef38a6ec1ef13dac12ba056f19f1576e6",
+        "version" : "1.7.2"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/1amageek/swift-certificates.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "efe9baa5469fd1760209d897ca3f702ee35683b8"
+        "revision" : "eba1858a1dfe28d8ab8da0dd7df0fca4da254544",
+        "version" : "1.19.3"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/1amageek/swift-crypto.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "469aab1498f38897e9f63ecda5ef80199226ea4a"
+        "revision" : "ac04e09b8621a4858dd4b1f2d595fc06a9ca5b11",
+        "version" : "4.5.2"
       }
     },
     {
@@ -33,8 +33,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/1amageek/swift-ssl.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "ea99379f85da552d8a69c8ee9905a31b2eb8b766"
+        "revision" : "7ab60869a0689e2579a82c689581eae3bdfa4a68",
+        "version" : "0.1.1"
+      }
+    },
+    {
+      "identity" : "swift-tls-types",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/1amageek/swift-tls-types.git",
+      "state" : {
+        "revision" : "4d907570d4e23ed918a281cb4ef27ef77e1d8b98",
+        "version" : "0.1.0"
       }
     }
   ],

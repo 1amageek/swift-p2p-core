@@ -322,14 +322,60 @@ public enum SSLBackendX25519: P2PCoreCrypto.KeyAgreement {
     public struct PrivateKey: Sendable { fileprivate let bytes: [UInt8] }
     public struct PublicKey: Sendable { fileprivate let bytes: [UInt8] }
     public static func generatePrivateKey() throws(CryptoError) -> PrivateKey {
-        do { let key = try X25519PrivateKey.generate(); return key.withBorrowedBytes { PrivateKey(bytes: copyBytes($0)) } } catch { throw .providerFailure }
+        do {
+            let key = try X25519PrivateKey.generate()
+            return key.withBorrowedBytes { PrivateKey(bytes: copyBytes($0)) }
+        } catch {
+            throw .providerFailure
+        }
     }
-    public static func privateKey(rawRepresentation: Span<UInt8>) throws(CryptoError) -> PrivateKey { guard rawRepresentation.count == 32 else { throw .invalidLength(expected: 32, actual: rawRepresentation.count) }; do { _ = try X25519PrivateKey(bytes: rawRepresentation) } catch { throw .invalidKeyMaterial }; return PrivateKey(bytes: copyBytes(rawRepresentation)) }
-    public static func publicKey(rawRepresentation: Span<UInt8>) throws(CryptoError) -> PublicKey { guard rawRepresentation.count == 32 else { throw .invalidLength(expected: 32, actual: rawRepresentation.count) }; do { _ = try X25519PublicKey(bytes: rawRepresentation) } catch { throw .invalidKeyMaterial }; return PublicKey(bytes: copyBytes(rawRepresentation)) }
-    public static func publicKey(for privateKey: PrivateKey) -> PublicKey { do { let key = try X25519PrivateKey(bytes: privateKey.bytes.span); return PublicKey(bytes: key.publicKey().withBorrowedBytes { copyBytes($0) }) } catch { preconditionFailure("swift-ssl X25519 public-key derivation failed") } }
-    public static func rawRepresentation(of privateKey: PrivateKey) -> [UInt8] { privateKey.bytes }
+    public static func privateKey(rawRepresentation: Span<UInt8>) throws(CryptoError) -> PrivateKey {
+        guard rawRepresentation.count == 32 else {
+            throw .invalidLength(expected: 32, actual: rawRepresentation.count)
+        }
+        do {
+            _ = try X25519PrivateKey(bytes: rawRepresentation)
+        } catch {
+            throw .invalidKeyMaterial
+        }
+        return PrivateKey(bytes: copyBytes(rawRepresentation))
+    }
+    public static func publicKey(rawRepresentation: Span<UInt8>) throws(CryptoError) -> PublicKey {
+        guard rawRepresentation.count == 32 else {
+            throw .invalidLength(expected: 32, actual: rawRepresentation.count)
+        }
+        do {
+            _ = try X25519PublicKey(bytes: rawRepresentation)
+        } catch {
+            throw .invalidKeyMaterial
+        }
+        return PublicKey(bytes: copyBytes(rawRepresentation))
+    }
+    public static func publicKey(for privateKey: PrivateKey) -> PublicKey {
+        do {
+            let key = try X25519PrivateKey(bytes: privateKey.bytes.span)
+            return PublicKey(bytes: key.publicKey().withBorrowedBytes { copyBytes($0) })
+        } catch {
+            preconditionFailure("swift-ssl X25519 public-key derivation failed")
+        }
+    }
+    public static func rawRepresentation(of privateKey: PrivateKey) -> [UInt8] {
+        privateKey.bytes
+    }
     public static func rawRepresentation(of publicKey: PublicKey) -> [UInt8] { publicKey.bytes }
-    public static func sharedSecret(privateKey: PrivateKey, peerPublicKey: PublicKey) throws(CryptoError) -> [UInt8] { do { let privateKey = try X25519PrivateKey(bytes: privateKey.bytes.span); let publicKey = try X25519PublicKey(bytes: peerPublicKey.bytes.span); let secret = try X25519.sharedSecret(privateKey: privateKey, peerPublicKey: publicKey); return secret.withBorrowedBytes { copyBytes($0) } } catch { throw .keyAgreementFailure } }
+    public static func sharedSecret(
+        privateKey: PrivateKey,
+        peerPublicKey: PublicKey
+    ) throws(CryptoError) -> [UInt8] {
+        do {
+            let privateKey = try X25519PrivateKey(bytes: privateKey.bytes.span)
+            let publicKey = try X25519PublicKey(bytes: peerPublicKey.bytes.span)
+            let secret = try X25519.sharedSecret(privateKey: privateKey, peerPublicKey: publicKey)
+            return secret.withBorrowedBytes { copyBytes($0) }
+        } catch {
+            throw .keyAgreementFailure
+        }
+    }
 }
 
 public enum SSLBackendP256Agreement: P2PCoreCrypto.KeyAgreement {
