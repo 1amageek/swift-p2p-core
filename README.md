@@ -1,169 +1,19 @@
-# swift-p2p-core
+# swift-p2p-core (retired)
 
-Embedded-first foundation for a Swift libp2p stack. It defines the byte
-currency, the crypto capability protocols, a strict-DER codec, and the
-datagram transport seam that the rest of the stack builds on — with zero
-`any` existentials and zero Foundation in the core modules. The wire and
-algorithmic currency is `[UInt8]`; `Span<UInt8>` is the zero-copy borrow used
-at protocol boundaries.
+This package has been retired. It no longer publishes products from `main`.
+Historical releases remain available through existing Git tags.
 
-> **Release status.** Current release: `0.3.0`.
-
-## Requirements
-
-- Swift 6.4 development snapshot `2026-07-23` (tools version `6.4`)
-- macOS 26+ / iOS 26+ (for `Span` / `RawSpan` availability)
-
-## Installation
-
-Add swift-p2p-core to your `Package.swift`:
-
-```swift
-.package(url: "https://github.com/1amageek/swift-p2p-core.git", from: "0.3.0")
+```text
+Former swift-p2p-core responsibility
+├── protocol-neutral bytes and addresses -> swift-networking/NetworkingCore
+├── clocks and instants                 -> swift-networking/NetworkingTime
+├── datagram contracts                  -> swift-networking/NetworkingDatagram
+├── cryptographic capability contracts  -> swift-ssl/SSLCryptoContracts
+├── cryptographic implementations       -> swift-ssl/SSLCrypto
+├── generic DER                         -> swift-ssl/SSLASN1
+└── libp2p identity and certificate DER -> swift-libp2p/LibP2PCore
 ```
 
-## Products
-
-| Product | Target deps | Purpose |
-|---|---|---|
-| `P2PCoreBytes` | — | Byte currency: `Bytes`, `ByteReader`, `ByteWriter`, `ByteError` |
-| `P2PCoreCrypto` | `P2PCoreBytes` | `CryptoProvider` capability protocols + clock/timer seams |
-| `P2PCoreDER` | `P2PCoreBytes` | Strict minimal-DER reader/writer + SPKI / SignedKey / certificate codecs |
-| `P2PCoreTransport` | `P2PCoreBytes` | `DatagramTransport` seam, endpoints, IP address types |
-| `P2PCoreFoundation` | `P2PCoreBytes` | Host bridge: `Bytes` ↔ `Data` (Foundation, host-only) |
-| `P2PCrypto` | `P2PCoreCrypto`, `swift-ssl` (`SSLCore`, `SSLCrypto`) | Default Native/WASM/Embedded crypto adapter |
-
-Every product is one library backed by one same-named target.
-
-## Architecture
-
-### Byte currency
-
-`P2PCoreBytes` provides `Bytes`, an owned value type wrapping `[UInt8]`
-storage. Borrowed, zero-copy views are exposed on demand as `Span<UInt8>` /
-`RawSpan` (returned with `@_lifetime(borrow self)`, never stored). The wire
-and algorithmic currency across the stack is `[UInt8]`; `Span<UInt8>` is the
-zero-copy borrow used at protocol boundaries. The `Lifetimes` experimental
-feature is always enabled so Span-returning members can express their
-lifetime.
-
-### Crypto capabilities
-
-`CryptoProvider` (in `P2PCoreCrypto`) is decomposed into capability
-sub-protocols rather than one monolith. The aggregate composes:
-
-| Sub-protocol | Capability |
-|---|---|
-| `AEADProvider` | AES-GCM-128/256, ChaCha20-Poly1305 |
-| `AESCounterModeProvider` | Reusable, in-place AES-128-CTR for SRTP-like protocols |
-| `KDFProvider` (refines `HashProvider`) | HKDF-SHA256 / HKDF-SHA384 |
-| `MACProvider` | HMAC-SHA1 / SHA256 / SHA384 |
-| `KeyAgreementProvider` | X25519, P-256, P-384 ECDH |
-| `SignatureProvider` | Ed25519, P-256, P-384 signatures |
-| `EntropyProvider` | CSPRNG (`associatedtype Random: RandomSource`) |
-| `ClockProvider` | monotonic clock singleton (`associatedtype Clock: MonotonicClock`) |
-| `HeaderProtectionProviding` | QUIC header protection (RFC 9001 §5.4) |
-
-`HashProvider` is the hashing primitive that `KDFProvider` refines.
-`AESCounterModeProvider` is deliberately not part of the `CryptoProvider`
-aggregate: a consumer combines it with only the other narrow capabilities it
-needs. Its cipher mutates a caller-owned `[UInt8]` range in place and reports
-failures through `AESCounterModeError`.
-Capabilities are expressed as `associatedtype`s (no `any`), and operations
-use typed throws. The aggregate capabilities throw `CryptoError`; the
-independent AES-CTR capability throws `AESCounterModeError`. The concrete
-`DefaultCryptoProvider` lives in this package's `P2PCrypto` product and delegates
-cryptographic primitives to the Pure Swift `swift-ssl` engine. Host-only
-interop packages remain optional test fixtures and are not part of the
-`P2PCrypto` production target.
-
-### Clock and timer seams
-
-The core inverts time so Embedded builds need neither `Task.sleep` nor
-`ContinuousClock`:
-
-```swift
-public protocol MonotonicClock: Sendable {
-    func monotonicMillis() -> UInt64
-    func monotonicNanos() -> UInt64
-}
-
-public protocol AsyncTimer: MonotonicClock {
-    func sleep(untilNanos deadlineNanos: UInt64) async throws(CancellationError)
-}
-```
-
-`AsyncTimer` refines `MonotonicClock` (one clock source) and throws only
-`CancellationError` (a typed throw — untyped `throws` would erase to
-`any Error` across the async boundary, which Embedded rejects). Concrete
-timer implementations are provided downstream (e.g. `swift-p2p-transport`).
-
-### DER codec
-
-`P2PCoreDER` is a strict, minimal-DER toolkit over owned `[UInt8]` (and
-`Span<UInt8>`):
-
-- `DERReader` (`~Copyable`) — strict TLV cursor; rejects BER indefinite
-  length, non-minimal length, and trailing bytes; reads throw `DERError`
-  rather than trapping on hostile wire data.
-- `DERWriter` — append-oriented minimal-DER builder.
-- `ObjectID` — fixed OID constants (`ecPublicKey`, `secp256r1`,
-  `secp384r1`, `ed25519`, `libp2pExt`).
-- `SubjectPublicKeyInfoDER` — SPKI encode/parse for P-256, P-384, Ed25519.
-- `LibP2PSignedKeyDER` — libp2p SignedKey extension value codec.
-- `LibP2PCertificateDER` — self-signed leaf certificate builder/parser.
-- `LibP2PIdentity` — public-key decode, signed-key verification, and PeerID
-  multihash derivation.
-
-The libp2p TLS extension OID is `1.3.6.1.4.1.53594.1.1`, exposed as
-`ObjectID.libp2pExt`.
-
-## Embedded build
-
-The core modules (`P2PCoreBytes`, `P2PCoreCrypto`, `P2PCoreDER`,
-`P2PCoreTransport`) and the `P2PCrypto` adapter carry no Foundation dependency
-in their portable execution paths, so they compile for WASM and Embedded
-Swift. The adapter uses the same `DefaultCryptoProvider` contract on every
-target; the implementation is `swift-ssl` on Native, WASM, and Embedded. The
-shared storage and capability contracts do not change by target.
-
-```bash
-# Host build
-TOOLCHAINS=org.swift.64202607231a swift build --target P2PCrypto
-
-# WASM build
-TOOLCHAINS=org.swift.64202607231a \
-  P2P_CORE_WASM=1 \
-  swift build \
-  --swift-sdk swift-6.4.x-DEVELOPMENT-SNAPSHOT-2026-07-23-a_wasm \
-  --target P2PCrypto \
-  -c release
-
-# Embedded WASM build
-TOOLCHAINS=org.swift.64202607231a \
-  P2P_CORE_EMBEDDED=1 \
-  swift build \
-  --swift-sdk swift-6.4.x-DEVELOPMENT-SNAPSHOT-2026-07-23-a_wasm-embedded \
-  --target P2PCrypto \
-  -c release
-```
-
-`P2PCoreFoundation` is the host-only bridge and is excluded from the
-Embedded core.
-
-## Testing
-
-Host builds run the per-module test suites with the pinned Swift 6.4 toolchain
-(tests may import Foundation / Testing). They also run
-`P2PCoreDERInteropTests`, which cross-check the minimal-DER output against
-Apple's X.509 / ASN.1 / Crypto packages; that interop suite can be opted out
-with `P2P_CORE_NO_INTEROP=1` and is automatically excluded under
-`P2P_CORE_WASM=1` and `P2P_CORE_EMBEDDED=1`.
-
-```bash
-TOOLCHAINS=org.swift.64202607231a \
-  xcodebuild test \
-  -scheme swift-p2p-core-Package \
-  -destination 'platform=macOS' \
-  -maximum-test-execution-time-allowance 60
-```
+There is no compatibility product or runtime fallback. Consumers must import
+the responsibility-specific replacement module directly. Source retained in
+this checkout is historical and is not part of the package graph.
